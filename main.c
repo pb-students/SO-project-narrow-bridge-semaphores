@@ -133,7 +133,7 @@ _Noreturn void* carRoutine (void* arg) {
         city();
 
         // Car goes to the bridge queue
-        if (pthread_mutex_lock(&mutCurrentCar) != 0) {
+        if ((errno = pthread_mutex_lock(&mutCurrentCar) != 0)) {
             perror("mutCurrentCar lock");
             exit(EXIT_FAILURE);
         }
@@ -141,7 +141,7 @@ _Noreturn void* carRoutine (void* arg) {
         car->queue = !car->city;
         push(carQueue, car);
 
-        if (pthread_mutex_unlock(&mutCurrentCar) != 0) {
+        if ((errno = pthread_mutex_unlock(&mutCurrentCar) != 0)) {
             perror("mutCurrentCar unlock");
             exit(EXIT_FAILURE);
         }
@@ -154,7 +154,7 @@ _Noreturn void* bridgeRoutine (void* arg) {
         struct Car* car = pop(carQueue);
 
         // Bridge is busy
-        if (pthread_mutex_lock(&mutBridge) != 0) {
+        if ((errno = pthread_mutex_lock(&mutBridge) != 0)) {
             perror("mutBridge lock");
             exit(EXIT_FAILURE);
         }
@@ -176,7 +176,7 @@ _Noreturn void* bridgeRoutine (void* arg) {
 
         // Bridge is free to go
         currentCar = NULL;
-        if (pthread_mutex_unlock(&mutBridge) != 0) {
+        if ((errno = pthread_mutex_unlock(&mutBridge) != 0)) {
             perror("mutBridge unlock");
             exit(EXIT_FAILURE);
         }
@@ -246,12 +246,12 @@ int main (int argc, char** argv) {
 
     // Create and start car and bridge threads
     pthread_attr_t attr;
-    if (pthread_attr_init(&attr) != 0) {
+    if ((errno = pthread_attr_init(&attr)) != 0) {
         perror("pthread_attr_init");
         exit(EXIT_FAILURE);
     }
 
-    if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE) != 0) {
+    if ((errno = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE)) != 0) {
         perror("pthread_attr_setdetachstate");
         exit(EXIT_FAILURE);
     }
@@ -259,7 +259,7 @@ int main (int argc, char** argv) {
     pthread_t threads[num];
     for (int i = 0; i < num; ++i) {
         pthread_t thread;
-        if (pthread_create(&thread, &attr, &carRoutine, (void *) (long) i) != 0) {
+        if ((errno = pthread_create(&thread, &attr, &carRoutine, (void *) (long) i) != 0)) {
             perror("pthread_create");
             exit(EXIT_FAILURE);
         }
@@ -268,19 +268,19 @@ int main (int argc, char** argv) {
     }
 
     pthread_t bridgeThread;
-    if (pthread_create(&bridgeThread, &attr, &bridgeRoutine, NULL)) {
+    if ((errno = pthread_create(&bridgeThread, &attr, &bridgeRoutine, NULL))) {
         perror("pthread_create");
         exit(EXIT_FAILURE);
     }
 
     for (int i = 0; i < num; ++i) {
-        if (pthread_join(threads[i], NULL) != 0) {
+        if ((errno = pthread_join(threads[i], NULL) != 0)) {
             perror("pthread_join");
             exit(EXIT_FAILURE);
         }
     }
 
-    if (pthread_join(bridgeThread, NULL) != 0) {
+    if ((errno = pthread_join(bridgeThread, NULL) != 0)) {
         perror("pthread_join");
         exit(EXIT_FAILURE);
     }

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <errno.h>
 #include "queue.h"
 struct LongQueue* createQueue () {
     static int i = 0;
@@ -42,7 +43,7 @@ void push (struct LongQueue* q, struct Car* value) {
     el->next = NULL;
     el->car = value;
 
-    if (pthread_mutex_lock(&q->mut) != 0) {
+    if ((errno = pthread_mutex_lock(&q->mut)) != 0) {
         perror("queue lock");
         exit(EXIT_FAILURE);
     }
@@ -51,13 +52,13 @@ void push (struct LongQueue* q, struct Car* value) {
         q->start = el;
         q->end = el;
 
-        if (pthread_mutex_unlock(&q->mut) != 0) {
+        if ((errno = pthread_mutex_unlock(&q->mut)) != 0) {
             perror("queue unlock");
             exit(EXIT_FAILURE);
         }
 
         // Bump up the semaphore
-        if (sem_post(q->sem) != 0) {
+        if ((errno = sem_post(q->sem)) != 0) {
             perror("queue sem_post");
             exit(EXIT_FAILURE);
         }
@@ -67,13 +68,13 @@ void push (struct LongQueue* q, struct Car* value) {
     q->end->next = el;
     q->end = el;
 
-    if (pthread_mutex_unlock(&q->mut) != 0) {
+    if ((errno = pthread_mutex_unlock(&q->mut)) != 0) {
         perror("queue unlock");
         exit(EXIT_FAILURE);
     }
 
     // Bump up the semaphore
-    if (sem_post(q->sem) != 0) {
+    if ((errno = sem_post(q->sem)) != 0) {
         perror("queue sem_post");
         exit(EXIT_FAILURE);
     }
@@ -87,7 +88,7 @@ struct Car* pop (struct LongQueue* q) {
         return NULL;
     }
 
-    if (pthread_mutex_lock(&q->mut) != 0) {
+    if ((errno = pthread_mutex_lock(&q->mut)) != 0) {
         perror("queue lock");
         exit(EXIT_FAILURE);
     }
@@ -99,7 +100,7 @@ struct Car* pop (struct LongQueue* q) {
     struct Car* popped = q->start->car;
     q->start = q->start->next;
 
-    if (pthread_mutex_unlock(&q->mut) != 0) {
+    if ((errno = pthread_mutex_unlock(&q->mut)) != 0) {
         perror("queue unlock");
         exit(EXIT_FAILURE);
     }
