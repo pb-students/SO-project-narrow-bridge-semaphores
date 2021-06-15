@@ -6,6 +6,11 @@
 
 struct Car* createCar (int id) {
     struct Car* car = malloc(sizeof(struct Car));
+    if (car == NULL) {
+        perror("malloc - car");
+        exit(EXIT_FAILURE);
+    }
+
     car->city = CITY_NONE;
     car->queue = CITY_NONE;
     car->id = id;
@@ -13,6 +18,10 @@ struct Car* createCar (int id) {
     // Create named semaphore for each car
     int length = snprintf( NULL, 0, "%d", id ) + 5;
     char* str = malloc(length);
+    if (str == NULL) {
+        perror("malloc - carName");
+        exit(EXIT_FAILURE);
+    }
     snprintf(str, length + 4, "/wc-%d", id);
 
     sem_unlink(str);

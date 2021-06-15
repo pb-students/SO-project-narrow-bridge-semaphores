@@ -16,8 +16,6 @@
 //#define DEBUG
 #define DEBUG_NUM_CARS 7
 
-// TODO: Handle all errors
-
 struct LongQueue* carQueue = NULL;
 struct Car* currentCar = NULL;
 struct Car** cars = NULL;
@@ -135,10 +133,18 @@ _Noreturn void* carRoutine (void* arg) {
         city();
 
         // Car goes to the bridge queue
-        pthread_mutex_lock(&mutCurrentCar);
+        if (pthread_mutex_lock(&mutCurrentCar) != 0) {
+            perror("mutCurrentCar lock");
+            exit(EXIT_FAILURE);
+        }
+
         car->queue = !car->city;
         push(carQueue, car);
-        pthread_mutex_unlock(&mutCurrentCar);
+
+        if (pthread_mutex_unlock(&mutCurrentCar) != 0) {
+            perror("mutCurrentCar unlock");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -148,7 +154,11 @@ _Noreturn void* bridgeRoutine (void* arg) {
         struct Car* car = pop(carQueue);
 
         // Bridge is busy
-        pthread_mutex_lock(&mutBridge);
+        if (pthread_mutex_lock(&mutBridge) != 0) {
+            perror("mutBridge lock");
+            exit(EXIT_FAILURE);
+        }
+
         currentCar = car;
 
         // NOTE: Let's say that going through bridge takes 1 sec
@@ -159,11 +169,17 @@ _Noreturn void* bridgeRoutine (void* arg) {
         // Car enters the city
         car->queue = CITY_NONE;
         car->city = !car->city;
-        sem_post(car->sem);
+        if (sem_post(car->sem) != 0) {
+            perror("car sem_post");
+            exit(EXIT_FAILURE);
+        }
 
         // Bridge is free to go
         currentCar = NULL;
-        pthread_mutex_unlock(&mutBridge);
+        if (pthread_mutex_unlock(&mutBridge) != 0) {
+            perror("mutBridge unlock");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -209,6 +225,11 @@ int main (int argc, char** argv) {
 
     // Create cars
     cars = malloc(sizeof(struct Car) * num);
+    if (cars == NULL) {
+        perror("malloc - cars");
+        exit(EXIT_FAILURE);
+    }
+
     for (int i = 0; i < num; ++i) {
         cars[i] = createCar(i);
     }
@@ -225,15 +246,22 @@ int main (int argc, char** argv) {
 
     // Create and start car and bridge threads
     pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    if (pthread_attr_init(&attr) != 0) {
+        perror("pthread_attr_init");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE) != 0) {
+        perror("pthread_attr_setdetachstate");
+        exit(EXIT_FAILURE);
+    }
 
     pthread_t threads[num];
     for (int i = 0; i < num; ++i) {
         pthread_t thread;
         if (pthread_create(&thread, &attr, &carRoutine, (void *) (long) i) != 0) {
             perror("pthread_create");
-            return 1;
+            exit(EXIT_FAILURE);
         }
 
         threads[i] = thread;
@@ -242,26 +270,24 @@ int main (int argc, char** argv) {
     pthread_t bridgeThread;
     if (pthread_create(&bridgeThread, &attr, &bridgeRoutine, NULL)) {
         perror("pthread_create");
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
     for (int i = 0; i < num; ++i) {
         if (pthread_join(threads[i], NULL) != 0) {
             perror("pthread_join");
-            return 1;
+            exit(EXIT_FAILURE);
         }
     }
 
     if (pthread_join(bridgeThread, NULL) != 0) {
         perror("pthread_join");
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
-    // Cleanup
-    pthread_mutex_destroy(&mutBridge);
-    pthread_mutex_destroy(&mutCurrentCar);
+    // NOTE: Cleanup is useless as we do not end the threads
+    // pthread_mutex_destroy(&mutBridge);
+    // pthread_mutex_destroy(&mutCurrentCar);
 
-    // TODO: Cleanup all cars and their semaphores
-    // TODO: Cleanup queue and its semaphore
     return 0;
 }

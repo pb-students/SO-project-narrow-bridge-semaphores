@@ -6,10 +6,18 @@
 struct LongQueue* createQueue () {
     static int i = 0;
     struct LongQueue* q = malloc(sizeof(struct LongQueue));
+    if (q == NULL) {
+        perror("malloc - queue");
+        exit(EXIT_FAILURE);
+    }
     q->start = NULL;
 
     int length = snprintf( NULL, 0, "%d", i ) + 6;
     char* str = malloc(length);
+    if (str == NULL) {
+        perror("malloc - queueName");
+        exit(EXIT_FAILURE);
+    }
     snprintf(str, length + 5, "/wlq-%d", i);
 
     sem_unlink(str);
@@ -27,25 +35,48 @@ struct LongQueue* createQueue () {
 
 void push (struct LongQueue* q, struct Car* value) {
     struct LongQueueElement* el = malloc(sizeof(struct LongQueueElement));
+    if (el == NULL) {
+        perror("malloc - queueElement");
+        exit(EXIT_FAILURE);
+    }
     el->next = NULL;
     el->car = value;
 
-    pthread_mutex_lock(&q->mut);
+    if (pthread_mutex_lock(&q->mut) != 0) {
+        perror("queue lock");
+        exit(EXIT_FAILURE);
+    }
+
     if (q->end == NULL) {
         q->start = el;
         q->end = el;
 
-        pthread_mutex_unlock(&q->mut);
-        sem_post(q->sem);
+        if (pthread_mutex_unlock(&q->mut) != 0) {
+            perror("queue unlock");
+            exit(EXIT_FAILURE);
+        }
+
+        // Bump up the semaphore
+        if (sem_post(q->sem) != 0) {
+            perror("queue sem_post");
+            exit(EXIT_FAILURE);
+        }
         return;
     }
 
     q->end->next = el;
     q->end = el;
-    pthread_mutex_unlock(&q->mut);
+
+    if (pthread_mutex_unlock(&q->mut) != 0) {
+        perror("queue unlock");
+        exit(EXIT_FAILURE);
+    }
 
     // Bump up the semaphore
-    sem_post(q->sem);
+    if (sem_post(q->sem) != 0) {
+        perror("queue sem_post");
+        exit(EXIT_FAILURE);
+    }
 }
 
 struct Car* pop (struct LongQueue* q) {
@@ -56,7 +87,10 @@ struct Car* pop (struct LongQueue* q) {
         return NULL;
     }
 
-    pthread_mutex_lock(&q->mut);
+    if (pthread_mutex_lock(&q->mut) != 0) {
+        perror("queue lock");
+        exit(EXIT_FAILURE);
+    }
 
     if (q->start == q->end) {
         q->end = NULL;
@@ -64,7 +98,11 @@ struct Car* pop (struct LongQueue* q) {
 
     struct Car* popped = q->start->car;
     q->start = q->start->next;
-    pthread_mutex_unlock(&q->mut);
+
+    if (pthread_mutex_unlock(&q->mut) != 0) {
+        perror("queue unlock");
+        exit(EXIT_FAILURE);
+    }
 
     // TODO: free the popped element
     return popped;
