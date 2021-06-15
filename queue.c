@@ -97,7 +97,8 @@ struct Car* pop (struct LongQueue* q) {
         q->end = NULL;
     }
 
-    struct Car* popped = q->start->car;
+    struct Car* car = q->start->car;
+    struct LongQueueElement* popped = q->start;
     q->start = q->start->next;
 
     if ((errno = pthread_mutex_unlock(&q->mut)) != 0) {
@@ -105,6 +106,6 @@ struct Car* pop (struct LongQueue* q) {
         exit(EXIT_FAILURE);
     }
 
-    // TODO: free the popped element
-    return popped;
+    free(popped);
+    return car;
 }
