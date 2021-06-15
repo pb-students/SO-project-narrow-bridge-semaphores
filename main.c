@@ -16,7 +16,7 @@
 //#define DEBUG
 #define DEBUG_NUM_CARS 7
 
-struct LongQueue* carQueue = NULL;
+struct CarQueue* carQueue = NULL;
 struct Car* currentCar = NULL;
 struct Car** cars = NULL;
 int num = 0;
@@ -50,7 +50,7 @@ int countCarsInQueue (int city) {
 }
 
 void printQueue (int city) {
-    struct LongQueueElement* curr = carQueue->start;
+    struct CarQueueElement* curr = carQueue->start;
     while (curr != NULL) {
         if (curr->car->queue == city) {
             printf("%d ", curr->car->id);

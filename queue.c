@@ -4,9 +4,9 @@
 #include <pthread.h>
 #include <errno.h>
 #include "queue.h"
-struct LongQueue* createQueue () {
+struct CarQueue* createQueue () {
     static int i = 0;
-    struct LongQueue* q = malloc(sizeof(struct LongQueue));
+    struct CarQueue* q = malloc(sizeof(struct CarQueue));
     if (q == NULL) {
         perror("malloc - queue");
         exit(EXIT_FAILURE);
@@ -34,8 +34,8 @@ struct LongQueue* createQueue () {
     return q;
 }
 
-void push (struct LongQueue* q, struct Car* value) {
-    struct LongQueueElement* el = malloc(sizeof(struct LongQueueElement));
+void push (struct CarQueue* q, struct Car* value) {
+    struct CarQueueElement* el = malloc(sizeof(struct CarQueueElement));
     if (el == NULL) {
         perror("malloc - queueElement");
         exit(EXIT_FAILURE);
@@ -80,7 +80,7 @@ void push (struct LongQueue* q, struct Car* value) {
     }
 }
 
-struct Car* pop (struct LongQueue* q) {
+struct Car* pop (struct CarQueue* q) {
     // Wait for the semaphore
     sem_wait(q->sem);
 
@@ -98,7 +98,7 @@ struct Car* pop (struct LongQueue* q) {
     }
 
     struct Car* car = q->start->car;
-    struct LongQueueElement* popped = q->start;
+    struct CarQueueElement* popped = q->start;
     q->start = q->start->next;
 
     if ((errno = pthread_mutex_unlock(&q->mut)) != 0) {

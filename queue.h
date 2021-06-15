@@ -2,18 +2,18 @@
 
 #include <semaphore.h>
 
-struct LongQueueElement {
+struct CarQueueElement {
     struct Car* car;
-    struct LongQueueElement* next;
+    struct CarQueueElement* next;
 };
 
-struct LongQueue {
+struct CarQueue {
     sem_t* sem;
     pthread_mutex_t mut;
-    struct LongQueueElement* start;
-    struct LongQueueElement* end;
+    struct CarQueueElement* start;
+    struct CarQueueElement* end;
 };
 
-struct LongQueue* createQueue ();
-struct Car* pop (struct LongQueue* q);
-void push (struct LongQueue* q, struct Car* car);
+struct CarQueue* createQueue ();
+struct Car* pop (struct CarQueue* q);
+void push (struct CarQueue* q, struct Car* car);
